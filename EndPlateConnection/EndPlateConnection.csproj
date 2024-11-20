@@ -17,7 +17,7 @@
 	  <PackageReference Include="Tekla.Structures.Plugins" Version="2021.0.0" />
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\..\TeklaPH\TeklaPH\TeklaPH.csproj" />
+	  <ProjectReference Include="TeklaPH\TeklaPH.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Compile Update="Properties\Resources.Designer.cs">
