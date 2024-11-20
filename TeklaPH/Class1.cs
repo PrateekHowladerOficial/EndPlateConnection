@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ using Tekla.Structures.Model.Operations;
 using Tekla.Structures.Model.UI;
 using Tekla.Structures.Plugins;
 using Tekla.Structures.Solid;
-using static Tekla.Structures.Model.Position;
+using TSM = Tekla.Structures.Model;
 using TSG = Tekla.Structures.Geometry3d;
 using static TeklaPH.Faces;
 
@@ -134,7 +135,7 @@ namespace TeklaPH
             }
             return points;
         }
-        public void GetFaceAxes(Face face, out Vector xAxis, out Vector yAxis)
+        public static void GetFaceAxes(Face face, out Vector xAxis, out Vector yAxis)
         {
             Vector normalVector;
             // Get the loop vertices of the face to extract points
@@ -425,28 +426,10 @@ namespace TeklaPH
 
             return Distance.PointToPoint(p1, p2);
         }
-        public static Tekla.Structures.Model.Plane ConvertGeometricPlaneToPlane(GeometricPlane geometricPlane)
-        {
-            // Extract the point on the plane
-            Point origin = geometricPlane.Origin;
-
-            // Extract the normal vector of the plane
-            Vector normal = geometricPlane.Normal;
-
-            // Create a new Plane using the origin and normal vector
-            Tekla.Structures.Model.Plane plane = new Tekla.Structures.Model.Plane();
-            plane.Origin = origin;
-            plane.AxisX = normal.Cross(new Vector(0, 0, 1)); // X-axis direction (perpendicular to Z-axis)
-            plane.AxisY = normal.Cross(plane.AxisX);         // Y-axis direction
-            plane.AxisX.Normalize();
-            plane.AxisY.Normalize();
-
-            return plane;
-        }
     }
     public class Fitting
     {
-        public static Face_ Edge_fitting(Part beam1, Part beam2, double gap)
+        public Face_ Edge_fitting(Part beam1, Part beam2, double gap)
         {
             Faces faces = new Faces();
             Line line = new Line();
@@ -472,7 +455,7 @@ namespace TeklaPH
             Point point1 = new Point(point.X + gap * vector.X, point.Y + gap * vector.Y, point.Z + gap * vector.Z);
             fitting.Plane.Origin = point1;
 
-            faces.GetFaceAxes(face.Face, out Vector xAxis, out Vector yAxis);
+            GetFaceAxes(face.Face, out Vector xAxis, out Vector yAxis);
             fitting.Plane.AxisX = xAxis;
             fitting.Plane.AxisY = yAxis;
             fitting.Father = beam2;
@@ -480,11 +463,11 @@ namespace TeklaPH
 
             return face;
         }
-        private static Face_ Web_Fitting(Part beam1, Part beam2)
+        private Face_ Web_Fitting(Part beam1, Part beam2)
         {
             Faces faces = new Faces();
             Line line = new Line();
-            List<Face_> beam1_faces = Get_faces(beam1, true);
+            List<Face_> beam1_faces = Get_faces(beam1);
             ArrayList beam1_centerLine = beam1.GetCenterLine(false);
             ArrayList beam2_centerLine = beam2.GetCenterLine(false);
             Face_ face = null;
@@ -505,7 +488,7 @@ namespace TeklaPH
 
             fitting.Plane.Origin = point;
 
-            faces.GetFaceAxes(face.Face, out Vector xAxis, out Vector yAxis);
+            GetFaceAxes(face.Face, out Vector xAxis, out Vector yAxis);
             fitting.Plane.AxisX = xAxis;
             fitting.Plane.AxisY = yAxis;
             fitting.Father = beam2;
@@ -513,7 +496,7 @@ namespace TeklaPH
 
             return face;
         }
-        private static Face_ Web_Fitting(Part beam1, Part beam2, double gap)
+        public static Face_ Web_Fitting(Part beam1, Part beam2, double gap)
         {
             Faces faces = new Faces();
             Line line = new Line();
@@ -538,7 +521,7 @@ namespace TeklaPH
 
             fitting.Plane.Origin = point;
 
-            faces.GetFaceAxes(face.Face, out Vector xAxis, out Vector yAxis);
+            GetFaceAxes(face.Face, out Vector xAxis, out Vector yAxis);
             fitting.Plane.AxisX = xAxis;
             fitting.Plane.AxisY = yAxis;
             fitting.Father = beam2;
@@ -546,49 +529,7 @@ namespace TeklaPH
 
             return face;
         }
-        public static void PartFitting(Part part1, Part part2, double gap)//only works if connection that have to be made at flange or web
-        {
-            Beam beam1 = part1 as Beam;
-            Beam beam2 = part2 as Beam;
-            ArrayList centerLine1 = beam1.GetCenterLine(false), centerLine2 = beam2.GetCenterLine(false);
-            List<Face_> beam1_faces = Faces.Get_faces(beam1, true);
-            Point mid = Line.MidPoint(centerLine2[0] as Point, centerLine2[1] as Point);
-            double distance = 0, hold = 0;
-            Face_ beam1_inter_face = null;
-
-            foreach (Face_ face in beam1_faces)
-            {
-                GeometricPlane geometricPlane = ConvertFaceToGeometricPlane(face.Face);
-                LineSegment lineSegment = new LineSegment(centerLine2[0] as Point, centerLine2[1] as Point);
-                Point intersectingPoint = Intersection.LineSegmentToPlane(lineSegment, geometricPlane);
-                if (intersectingPoint != null)
-                {
-                    distance = Distance.PointToPoint(intersectingPoint, mid);
-                    if ((distance < hold || hold == 0.0) && !new List<int> { 1, 3, 7, 9, 0, 10, 6, 4 }.Contains(beam1_faces.IndexOf(face)))
-                    {
-                        hold = distance;
-                        beam1_inter_face = face;
-
-                    }
-                }
-
-            }
-            Tekla.Structures.Model.Fitting fitting = new Tekla.Structures.Model.Fitting();
-            fitting.Plane = new Plane();
-            fitting.Plane = new Plane();
-            Vector vector = beam1_inter_face.Vector;
-            Point point = Faces.Get_Points(beam1_inter_face.Face)[0] as Point;
-
-            Point point1 = new Point(point.X + gap * vector.X, point.Y + gap * vector.Y, point.Z + gap * vector.Z);
-            fitting.Plane.Origin = point1;
-            Faces.GetFaceAxes(beam1_inter_face.Face, out Vector xAxis, out Vector yAxis);
-            fitting.Plane.AxisX = xAxis;
-            fitting.Plane.AxisY = yAxis;
-            fitting.Father = beam2;
-            fitting.Insert();
-
-        }
-        private static void BeamBooleanCut(Part beam1, Part beam2, double clearance, double gap, double thickness)
+        private void BeamBooleanCut(Part beam1, Part beam2, double clearance, double gap, double thickness)
         {
             Faces faces = new Faces();
             Line line = new Line();
@@ -640,7 +581,7 @@ namespace TeklaPH
                 }
             }
         }
-        private static void SameProfileEdgeJoint(Part part1, Part part2)
+        private void SameProfileEdgeJoint(Part part1, Part part2)
         {
             Faces faces = new Faces();
             Line line = new Line();
@@ -713,6 +654,48 @@ namespace TeklaPH
             fitting1.Plane.AxisY = new Tekla.Structures.Geometry3d.Line(mid, point3).Direction;
             fitting1.Father = part2;
             fitting1.Insert();
+        }
+        public static Face PartFitting(Part part1, Part part2, double gap)//only works if connection that have to be made at flange or web
+        {
+            Beam beam1 = part1 as Beam;
+            Beam beam2 = part2 as Beam;
+            ArrayList centerLine1 = beam1.GetCenterLine(false), centerLine2 = beam2.GetCenterLine(false);
+            List<Face_> beam1_faces = Faces.Get_faces(beam1, true);
+            Point mid = Line.MidPoint(centerLine2[0] as Point, centerLine2[1] as Point);
+            double distance = 0, hold = 0;
+            Face_ beam1_inter_face = null;
+
+            foreach (Face_ face in beam1_faces)
+            {
+                GeometricPlane geometricPlane = ConvertFaceToGeometricPlane(face.Face);
+                LineSegment lineSegment = new LineSegment(centerLine2[0] as Point, centerLine2[1] as Point);
+                Point intersectingPoint = Intersection.LineSegmentToPlane(lineSegment, geometricPlane);
+                if (intersectingPoint != null)
+                {
+                    distance = Distance.PointToPoint(intersectingPoint, mid);
+                    if ((distance < hold || hold == 0.0) && !new List<int> { 1, 3, 7, 9, 0, 10, 6, 4 }.Contains(beam1_faces.IndexOf(face)))
+                    {
+                        hold = distance;
+                        beam1_inter_face = face;
+
+                    }
+                }
+
+            }
+            Tekla.Structures.Model.Fitting fitting = new Tekla.Structures.Model.Fitting();
+            fitting.Plane = new Plane();
+            fitting.Plane = new Plane();
+            Vector vector = beam1_inter_face.Vector;
+            Point point = Faces.Get_Points(beam1_inter_face.Face)[0] as Point;
+
+            Point point1 = new Point(point.X + gap * vector.X, point.Y + gap * vector.Y, point.Z + gap * vector.Z);
+            fitting.Plane.Origin = point1;
+            Faces.GetFaceAxes(beam1_inter_face.Face, out Vector xAxis, out Vector yAxis);
+            fitting.Plane.AxisX = xAxis;
+            fitting.Plane.AxisY = yAxis;
+            fitting.Father = beam2;
+            fitting.Insert();
+            return beam1_inter_face.Face;
         }
     }
     public class DisplayPrompt

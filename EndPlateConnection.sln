@@ -5,7 +5,7 @@ VisualStudioVersion = 17.10.35122.118
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EndPlateConnection", "EndPlateConnection\EndPlateConnection.csproj", "{D51F29A9-E8F6-435E-A146-EB866C5DC809}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeklaPH", "EndPlateConnection\TeklaPH\TeklaPH.csproj", "{43BDDCFE-F815-488D-859B-A3C327C8D355}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeklaPH", "TeklaPH\TeklaPH.csproj", "{43BDDCFE-F815-488D-859B-A3C327C8D355}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

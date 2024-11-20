@@ -122,6 +122,8 @@ namespace EndPlateConnection
                 myModel.GetWorkPlaneHandler().SetCurrentTransformationPlane(newWorkPlane);
 
                 //main logic start 
+                double gap = 10;//add the gap here
+                TeklaPH.Fitting.PartFitting(beam1, beam2, gap);
 
 
                 //workPlaneHandler.SetCurrentTransformationPlane(currentTransformation);
